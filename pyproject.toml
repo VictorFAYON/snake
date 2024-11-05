@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "snake"
+version = "0.1.0"
+description = ""
+authors = ["Victor Fayon <victor.fayon@et.minesparis.psl.eu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+ouf = "snake.main:ouf"

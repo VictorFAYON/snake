@@ -1,0 +1,2 @@
+def ouf():
+    print("ouf !")
