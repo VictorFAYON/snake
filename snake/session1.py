@@ -18,17 +18,40 @@ def boardsize():
     if args.l < MIN_LENTH:
         raise ValueError("The size (-l argument) must be greater or equal to %d." % MIN_WIDTH)
         pygame.init()
+    
+    args.w=(args.w//20)*20
+    args.l=(args.l//20)*20
     return args
 def snakeboard():
     args=boardsize()
     screen = pygame.display.set_mode( (args.w,args.l) )
     clock = pygame.time.Clock()
-    while True:
+    stay=True
+    pygame.display.set_caption("SNAKE")
+    while stay:
 
         clock.tick(1)
         for event in pygame.event.get():
-          pass
-        screen.fill( (255, 255, 255) ) 
-        pygame.display.update()
 
+            if event.type == pygame.QUIT:
+                if event.type == pygame.QUIT:
+                    stay=False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    stay=False
+        
+        screen.fill( (255, 255, 255) ) 
+        quadrillage(screen, args.w,args.l)
+        pygame.display.update()
     pygame.quit()
+
+def quadrillage(s,w,l):
+    color = (0, 0, 0) # black
+    width=20
+    height=20
+#On va remplir à chaque ligen soit les cases paires soit les cases impaires
+    for top in range(w//20):
+        for left in [_ for _ in range(l//20)][::2]:
+            rect = pygame.Rect((left+top%2)*20, top*20, width, height) 
+            pygame.draw.rect(s, color, rect)
+def printsnake():
