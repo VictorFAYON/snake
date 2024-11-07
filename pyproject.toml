@@ -17,4 +17,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 ouf = "snake.main:ouf"
 h = "snake.main:h"
-snake="snake.session1:snakeboard"
+snake="snake.session1:snake"
