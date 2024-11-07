@@ -54,4 +54,12 @@ def quadrillage(s,w,l):
         for left in [_ for _ in range(l//20)][::2]:
             rect = pygame.Rect((left+top%2)*20, top*20, width, height) 
             pygame.draw.rect(s, color, rect)
-def printsnake():
+def printsnake(s,position):
+    color = (9, 82, 40) # vert sapin
+    width=20
+    height=20
+#On va remplir les position qui sont des tuples
+    for pos in position:
+            rect = pygame.Rect(pos[0], pos[1], width, height) 
+            pygame.draw.rect(s, color, rect)
+    
