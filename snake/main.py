@@ -34,7 +34,7 @@ def snake(): #le jeu en lui-même
     stay=True
     pygame.display.set_caption("SNAKE")
 
-    position= initial_snake(lenth,width)
+    position= initial_snake()
     apple = rand_apple(position, lenth, width)
     #Boucle d'action en Jeu
     while stay:
@@ -72,13 +72,16 @@ def printsnake(s,position):#affiche le serpent en fonction de sa position
     height=20
 #On va remplir les position qui sont des tuples
     for pos in position:
-            rect = pygame.Rect(pos[0]*20, pos[1]*20, width, height) 
+            rect = pygame.Rect(pos[1]*20, pos[0]*20, width, height) 
             pygame.draw.rect(s, color, rect)
-def initial_snake(lenth,width):#créé la position initiale aléatoire du serpent
+def random_snake(lenth,width):#créé la position initiale aléatoire du serpent
     x=rd.randint(4,width-1)
     y=rd.randint(1,lenth-1)
     position=[(x,y),(x-1,y),(x-2,y)]
     return position
+
+def initial_snake():
+    return [(10,5),(10,6),(10,7)]
 
 def rand_apple(position, l, w):#créé une position de pomme aléatoire
     x=rd.randint(1,w-1)
@@ -92,6 +95,6 @@ def print_apple(apple,s):#affiche la pomme
     color = (228,124,110) # rouge clair
     width=20
     height=20
-    rect = pygame.Rect(apple[0]*20, apple[1]*20, width, height) 
+    rect = pygame.Rect(apple[1]*20, apple[0]*20, width, height) 
     pygame.draw.rect(s, color, rect)
 
