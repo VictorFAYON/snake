@@ -2,6 +2,73 @@ import pygame
 import argparse
 import random as rd
 
+# version avec une property
+
+class tile:
+
+    def __init__(self, color, x,y):
+        self._color = color
+        self.x=x
+        self.y=y
+
+    def drawtile(self,s,x,y):
+        rect = pygame.Rect(self.x*20, self.y*20, 20, 20) 
+        pygame.draw.rect(s, self._color, rect)
+        
+    
+class checkerboard:
+
+    def __init__(self, width,lenth,color1,color2):
+        self.width=width
+        self.lenth=lenth
+        self._color1= color1
+        self._color2= color2
+
+    def draw(self,s):
+        for top in range(self.lenth):
+            for left in range(self.width):
+                rect = pygame.Rect((left+top%2)*20, top*20, 20, 20) 
+                if (left+top%2)%2==0:
+                    tile(self._color1,top,left).drawtile(s,top,left)
+                else:
+                    tile(self._color2,top,left).drawtile(s,top,left)
+
+
+class serpent:
+    def __init__(self,position: list,direction,colorserpent):
+        self.colorserpent=colorserpent
+        self.position=position
+        self.direction=direction
+    
+    def printserpent(self,s):
+        for vertebre in self.position:
+            tile(self._colorserpent,vertebre[0],vertebre[1]).drawtile(s,vertebre[0],vertebre[1])
+    
+    def eat(self):
+
+        position=self.position
+        direction=self.direction
+
+        position.append(position[-1])
+        for i in range(len(position)-1):
+            position[len(position)-i]=position[len(position)-1-i]
+        position[0]+=direction
+
+    def avancer(self,apple):
+
+        position=self.position
+        direction=self.direction
+
+
+        if position[0] + direction==apple:
+            serpent.eat()
+        else:   
+            for i in range(len(position)-1):
+                position[len(position)-i]=position[len(position)-1-i]
+            position[0]+=direction
+        
+
+
 def boardsize():#on créé les dimensions, l'utilisateur peut donne les dimensions, on les redimentionne si besoin 
 
     MIN_WIDTH = 200
@@ -98,3 +165,35 @@ def print_apple(apple,s):#affiche la pomme
     rect = pygame.Rect(apple[1]*20, apple[0]*20, width, height) 
     pygame.draw.rect(s, color, rect)
 
+def snakeclass():
+    args=boardsize()
+    lenth=args.l//20
+    width=args.l//20
+    screen = pygame.display.set_mode( (args.w,args.l) )
+    clock = pygame.time.Clock()
+    stay=True
+    color1=(0,0,0)
+    color2=(255,255,255)
+    pygame.display.set_caption("SNAKE")
+
+    position= initial_snake()
+    apple = rand_apple(position, lenth, width)
+    #Boucle d'action en Jeu
+    while stay:
+
+        clock.tick(1)
+        for event in pygame.event.get():
+            #On créé la porte de sortie
+            if event.type == pygame.QUIT:
+                if event.type == pygame.QUIT:
+                    stay=False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    stay=False
+        
+        #on créé l'affichage de tous les éléments
+#        printsnake(screen,position)
+#        print_apple(apple,screen)
+        checkerboard(width,lenth,color1,color2).draw(screen)
+        pygame.display.update()
+    pygame.quit()
