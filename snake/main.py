@@ -54,6 +54,7 @@ class serpent:
         for i in range(len(position)-1):
             position[len(position)-i]=position[len(position)-1-i]
         position[0]=add(direction,position[0])
+        self.position=position
 
     def limite(self,w,l):
         nexttile=add(self.position[0],self.direction)
@@ -76,6 +77,7 @@ class serpent:
             for i in range(len(position)-1):
                 position[len(position)-i]=position[len(position)-1-i]
             position[0]=add(direction,position[0])
+        self.position=position
 
 class direction:
     def __init__(self,dir):
@@ -134,7 +136,7 @@ class snake:
     def point(self):
         self.score+=1
     def game(self):
-        args=snake.boardsize()
+        args=snake().boardsize()
         lenth=args.l//20
         width=args.l//20
         screen = pygame.display.set_mode( (args.w,args.l) )
@@ -187,6 +189,8 @@ class snake:
             pygame.display.update()
         pygame.quit()
 
+def snakegame():
+    snake().game()
 
 
 
@@ -194,7 +198,7 @@ class snake:
 
 
 
-
+'''
 def boardsize():#on créé les dimensions, l'utilisateur peut donne les dimensions, on les redimentionne si besoin 
 
     MIN_WIDTH = 200
@@ -325,4 +329,4 @@ def snake(): #le jeu en lui-même
         checkerboard(width,lenth,color1,color2).draw(screen)
         pygame.display.update()
     pygame.quit()
-
+'''
