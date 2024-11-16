@@ -3,7 +3,7 @@ import argparse
 import random as rd
 
 def add(a,b):
-        return (a[0]+b[0],a[1]+b[1])
+        return [a[0]+b[0],a[1]+b[1]]
 
 class tile:
 
@@ -40,44 +40,39 @@ class serpent:
         self.colorserpent=colorserpent
         self.position=position
         self.direction=direction
+        self.stay=True
     
     def printserpent(self,s):
         for vertebre in self.position:
-            tile(self._colorserpent,vertebre[0],vertebre[1]).drawtile(s,vertebre[0],vertebre[1])
+            tile(self.colorserpent,vertebre[0],vertebre[1]).drawtile(s,vertebre[0],vertebre[1])
     
-    def eat(self):
+    def eat(self,dir):
+        self.position.append(self.position[-1])
+        for i in range(1,len(self.position)):
+            self.position[len(self.position)-i]=self.position[len(self.position)-1-i]
+        self.position[0]=add(dir,self.position[0])
 
-        position=self.position
-        direction=self.direction
-
-        position.append(position[-1])
-        for i in range(len(position)-1):
-            position[len(position)-i]=position[len(position)-1-i]
-        position[0]=add(direction,position[0])
-        self.position=position
-
-    def limite(self,w,l):
-        nexttile=add(self.position[0],self.direction)
-        if nexttile[0] >l or nexttile[0]<0 or  nexttile[1] >w or nexttile[1]<0 or nexttile==apple.position():
+    def limite(self,w,l,dir):
+        nexttile=add(self.position[0],dir)
+        if nexttile[0] >l or nexttile[0]<0 or  nexttile[1] >w or nexttile[1]<0 or nexttile in self.position[:len(self.position)-1]:
             return True
         return False
 
-    def avancer(self,apple,w,l):
+    def avancer(self,apple,w,l,score,dir):
 
-        position=self.position
-        direction=self.direction
-        if serpent.limite(w,l):
-            snake.endgame()
+        if serpent.limite(self,w,l,dir):
+            self.stay=False
 
-        if add(position[0], direction)==apple:
-            serpent.eat()
-            snake.point()
-            apple.new()
+        if add(self.position[0], dir)==apple.position:
+            serpent.eat(self,dir)
+            score.win()
+            apple.new(self.position,w,l)
         else:   
-            for i in range(len(position)-1):
-                position[len(position)-i]=position[len(position)-1-i]
-            position[0]=add(direction,position[0])
-        self.position=position
+            for i in range(1,len(self.position)):
+                self.position[len(self.position)-i][0]=self.position[len(self.position)-1-i][0]
+                self.position[len(self.position)-i][1]=self.position[len(self.position)-1-i][1]
+            self.position[0]=add(dir,self.position[0])
+
 
 class direction:
     def __init__(self,dir):
@@ -88,11 +83,9 @@ class direction:
         self.dir=dir
 
 class apple:
-    def __init__(self,color):
+    def __init__(self,color,serp,w,l):
         self.color=color
-        self.position=apple.new(serpent.position)
-    def position(self):
-        return self.position()
+        self.position=apple.new(self,serp,w,l)
 
     def new(self,position,w,l):
         x=rd.randint(1,w-1)
@@ -100,25 +93,33 @@ class apple:
         while (x,y) in position:
             x=rd.randint(1,w-1)
             y=rd.randint(1,l-1)
-        self.position=(x,y)
-        return (x,y)
+        self.position=[x,y]
+        return [x,y]
     def print(self,s):
         width=20
         height=20
-        rect = pygame.Rect(apple[1]*20, apple[0]*20, width, height) 
+        rect = pygame.Rect(self.position[0]*20, self.position[1]*20, width, height) 
         pygame.draw.rect(s, self.color, rect)
+
+class point:
+    def __init__(self):
+        self.pt=0
+    def win(self):
+        self.pt+=1
+    def give(self):
+        return self.pt
 
 
 class snake:
     def boardsize(self):
-        MIN_WIDTH = 200
-        MIN_LENTH = 200
+        MIN_WIDTH = 300
+        MIN_LENTH = 300
 
         parser = argparse.ArgumentParser(description='Set the resolution')
         parser.add_argument('-w', type=int, help="width")
         parser.add_argument('-l', type=int, help="lenth")
-        parser.set_defaults(w=200)
-        parser.set_defaults(l=200)
+        parser.set_defaults(w=300)
+        parser.set_defaults(l=300)
         args = parser.parse_args()
 
         if args.w < MIN_WIDTH:
@@ -133,40 +134,40 @@ class snake:
         return args
     def endgame(self):
         self.stay=False
-    def point(self):
-        self.score+=1
+
     def game(self):
         args=snake().boardsize()
         lenth=args.l//20
         width=args.l//20
         screen = pygame.display.set_mode( (args.w,args.l) )
         clock = pygame.time.Clock()
-        self.stay=True
-        self.score=0
-        pygame.display.set_caption(f"SNAKE Score:{self.score}")
+        score=point()
+        pygame.display.set_caption(f"SNAKE Score:{score.pt}")
 
         #serpent
         initialdirection=(1,0)
-        direction(initialdirection)
+        dir=direction(initialdirection)
         colorserpent=(9, 82, 40)
-        initialsserpent=[(10,5),(10,6),(10,7)]
-        serpent(initialsserpent,direction.print(),colorserpent)
+        initialsserpent=[[10,7],[10,6],[10,5]]
+        serp=serpent(initialsserpent,dir.print(),colorserpent)
 
         #pomme
         colorapple=(228,124,110)
-        apple(colorapple)
+        pom=apple(colorapple,serp.position,width,lenth)
 
         #checkerboard
         black=(0,0,0)
         white=(255,255,255)
-        checkerboard(width,lenth,black,white)
+        check=checkerboard(width,lenth,black,white)
 
         #Boucle d'action en Jeu
-        while self.stay:
-            checkerboard.draw(screen)
-            serpent.printserpent(screen)
-            apple.print(screen)
+        while serp.stay:
+            check.draw(screen)
+            serp.printserpent(screen)
+            pom.print(screen)
             clock.tick(1)
+            pygame.display.update()
+
             for event in pygame.event.get():
                 #On créé la porte de sortie
                 if event.type == pygame.QUIT:
@@ -176,17 +177,16 @@ class snake:
                     if event.key == pygame.K_q:
                         self.stay=False
                     if event.key == pygame.K_UP:
-                        direction.change((1,0))
+                        dir.change((0,-1))
                     if event.key == pygame.K_DOWN:
-                        direction.change((-1,0))
+                        dir.change((0,1))
                     if event.key == pygame.K_LEFT:
-                        direction.change((0,-1))
+                        dir.change((-1,0))
                     if event.key == pygame.K_RIGHT:
-                        direction.change((0,1))
+                        dir.change((1,0))
 
-            serpent.avancer(apple.position(),width,lenth)
+            serp.avancer(pom,width,lenth,score,dir.dir)
             #on créé l'affichage de tous les éléments
-            pygame.display.update()
         pygame.quit()
 
 def snakegame():
