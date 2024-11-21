@@ -166,6 +166,7 @@ class snake:
             serp.printserpent(screen)
             pom.print(screen)
             clock.tick(1)
+            pygame.display.set_caption(f"SNAKE Score:{score.pt}")
             pygame.display.update()
 
             for event in pygame.event.get():
