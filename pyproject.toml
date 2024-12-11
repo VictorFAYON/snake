@@ -19,6 +19,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 ouf = "snake.main:ouf"
+snake = "snake.main:snakegame"
 
 [tool.ruff.lint]
 select = ["ALL"]
