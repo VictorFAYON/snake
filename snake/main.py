@@ -2,9 +2,65 @@ import abc  # Module pour les classes abstraites
 import argparse  # Pour traiter les arguments de ligne de commande
 import enum  # Pour créer des énumérations
 import random as rd  # Pour les opérations aléatoires
-from typing import List, Tuple, Iterator, Optional, Any  # Types utilisés pour annoter le code
+from typing import List, Tuple, Iterator,  Any  # Types utilisés pour annoter le code
 
 import pygame  # Bibliothèque pour créer des jeux en 2D
+
+class Observer(abc.ABC):
+    def __init__(self,l,w) -> None:
+        super().__init__()
+        self._objects: list[GameObject]=[]
+        self.l=l
+        self.w=w
+        self.stay=True
+    def notify_object_moved(self, obj: "GameObject") -> "GameObject":
+        for o in self._objects:
+            if isinstance(o, Subject):
+                pos=[]
+                for ti in o.tiles:
+                    pos.append(ti)
+                    if o == obj:
+                        if pos[0].x > self.l or pos[0].x < 0 or pos[1].y > self.w or pos[1].y < 0 or [pos[0].x,pos[0].y] in [[ti.x,ti.y] for ti in pos[1:]]:
+                            self.notify_limite()
+                    else:
+                        if obj in o:
+                            self.notify_collision(obj,o)
+
+        return obj
+
+    def notify_object_eaten(self, obj: "Serpent") -> None:
+        if isinstance(self,Apple):
+            self.new(obj.position, self.w,self.l)
+        if isinstance(self,Serpent):
+            self.eaten=True
+        if isinstance(self,Point):
+            self.win()
+
+
+    def notify_collision(self, obj: "GameObject",o: "GameObject") -> None:
+        if isinstance(obj, Serpent) and isinstance(o, Apple):
+            if isinstance(self,Subject):
+                for obs in self._observers:
+                    obs.notify_object_eaten(obj)
+    def notify_limite(self):
+        self.stay=False
+class Subject(abc.ABC):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._observers: list[Observer] = []
+
+    @property
+    def observers(self) -> list[Observer]:
+        return self._observers
+
+    def attach_obs(self, obs: Observer) -> None:
+        print(f"Attach {obs} as observer of {self}.")
+        self._observers.append(obs)
+
+    def detach_obs(self, obs: Observer) -> None:
+        print(f"Detach observer {obs} from {self}.")
+        self._observers.remove(obs)
 
 # Enumération pour les directions du serpent
 class Dir(enum.Enum):  # Définit les directions possibles
@@ -32,7 +88,7 @@ class Tile:
             pygame.Rect(self.x * size, self.y * size, size, size),
         )
 # Classe représentant le plateau du jeu
-class Board:
+class Board(Observer, Subject):
     def __init__(self, screen: pygame.Surface, size: int) -> None:
         self._screen: pygame.Surface = screen  # Surface de dessin
         self._size: int = size  # Taille des cases
@@ -43,7 +99,6 @@ class Board:
         for obj in self._objects:
             for tile in obj.tiles:
                 tile.draw(self._screen, self._size)
-
     def newobject(self, gameobject: "GameObject") -> None:
         # Ajoute un nouvel objet au plateau
         self._objects.append(gameobject)
@@ -52,6 +107,15 @@ class Board:
 class GameObject(abc.ABC):
     def __init__(self) -> None:
         super().__init__()
+
+    def __contains__(self, obj: object) -> bool:
+        if isinstance(obj, GameObject):
+            for ti in self.tiles:
+                for autre in obj.tiles:
+                    if [ti.x,ti.y]==autre.tiles:
+                        return True
+            return False
+        raise TypeError("Can contain GameObject")
 
     @property
     @abc.abstractmethod
@@ -63,7 +127,7 @@ class GameObject(abc.ABC):
 
 
 # Classe représentant le serpent
-class Serpent(GameObject):
+class Serpent(GameObject, Subject, Observer):
     def __init__(
         self,
         dir: Dir,
@@ -81,18 +145,7 @@ class Serpent(GameObject):
         self.l: int = l  # Longueur du plateau
         self.w: int = w  # Largeur du plateau
         self.stay: bool = True  # Indique si le jeu continue
-
-    def eat(self) -> None:
-        # Le serpent mange une pomme et s'allonge
-        self.position.append(self.position[-1])  # Ajoute une case à la fin
-        for i in range(1, len(self.position)):
-            self.position[len(self.position) - i] = self.position[len(self.position) - 1 - i]
-        self.position[0] = self.position[0] + self._direction  # Allonge la tête
-
-    def limite(self) -> bool:
-        # Vérifie si le serpent touche les limites ou lui-même
-        nexttile: Tile = self.position[0] + self._direction
-        return bool(nexttile.x > self.l or nexttile.x < 0 or nexttile.y > self.w or nexttile.y < 0 or [nexttile.x,nexttile.y] in [[ti.x,ti.y] for ti in self.position[:-1]])
+        self.eaten: bool = False
 
     @property
     def dir(self) -> Dir:
@@ -102,19 +155,16 @@ class Serpent(GameObject):
     def dir(self, new_direction: Dir) -> None:
         self._direction = new_direction  # Met à jour la direction
 
-    def avancer(self, apple: "Apple", score: "Point") -> None:
-        # Fait avancer le serpent et gère les interactions
-        if self.limite():
-            self.stay = False  # Arrête le jeu si collision
-
-        if (self.position[0] + self._direction).x == apple.position.x and (self.position[0] + self._direction).y == apple.position.y:
-            self.eat()  # Mange une pomme
-            score.win()  # Augmente le score
-            apple.new(self.position, self.w, self.l)  # Génère une nouvelle pomme
-        else:
-            for i in range(1, len(self.position)):
-                self.position[len(self.position) - i] = self.position[len(self.position) - 1 - i]
-            self.position[0] = self.position[0] + self._direction  # Avance la tête
+    def avancer(self) -> None:
+        # Fait grandir le serpent
+        self.position.append(self.position[-1])
+        for i in range(1, len(self.position)-1):
+            self.position[len(self.position) - i] = self.position[len(self.position) - 1 - i]
+        self.position[0] = self.position[0] + self._direction  # Avance la tête
+        for obs in self.observers:
+            obs.notify_object_moved(self)
+        if not self.eaten:
+            self.position.pop()
 
     @property
     def tiles(self) -> Iterator[Tile]:
@@ -142,7 +192,7 @@ class CheckerBoard(GameObject):
                     yield Tile(self._color2, ligne, colonne)
 
 # Classe pour représenter une pomme
-class Apple(GameObject):
+class Apple(GameObject, Subject, Observer):
     def __init__(
         self, color: Tuple[int, int, int], serp: List[Tile], w: int, l: int
     ) -> None:
@@ -163,7 +213,7 @@ class Apple(GameObject):
         yield self.position  # Renvoit la case de la pomme
 
 # Classe pour gérer le score
-class Point:
+class Point(Observer):
     def __init__(self) -> None:
         self.pt: int = 0  # Score initial
 
@@ -208,18 +258,23 @@ class Snake:
         black, white = (0, 0, 0), (255, 255, 255)
         check = CheckerBoard(width, lenth, black, white)
         board.newobject(check)  # Ajoute le damier au plateau
+        board.attach_obs(score)
 
         dir = Dir.RIGHT
         colorserpent = (9, 82, 40)
         initialsserpent = [[10, 7], [10, 6], [10, 5]]
         serp = Serpent(dir, colorserpent, initialsserpent, lenth, width)
         board.newobject(serp)  # Ajoute le serpent au plateau
+        serp.attach_obs(board)
+        board.attach_obs(serp)
 
         colorapple = (228, 124, 110)
         pom = Apple(colorapple, serp.position, width, lenth)
         board.newobject(pom)  # Ajoute une pomme au plateau
+        pom.attach_obs(board)
+        board.attach_obs(pom)
 
-        while serp.stay:
+        while board.stay:
             board.draw()  # Dessine le plateau
             clock.tick(2)  # Gère la vitesse du jeu
             pygame.display.set_caption(f"SNAKE Score: {score.pt}")
@@ -241,7 +296,7 @@ class Snake:
                         dir = Dir.RIGHT
 
             serp.dir = dir
-            serp.avancer(pom, score)
+            serp.avancer()
 
         pygame.quit()  # Quitte le jeu
 
