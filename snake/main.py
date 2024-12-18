@@ -6,13 +6,22 @@ import re #Pour les regular expression
 from typing import List, Tuple, Iterator,  Any  # Types utilisés pour annoter le code
 
 import pygame  # Bibliothèque pour créer des jeux en 2D
+
+def hex_to_rgb(hex_color:str)->tuple:
+    hex_color = hex_color[1:]
+    # Convertir en tuple RGB
+    r=int(hex_color[:2], 16)
+    g=int(hex_color[2:4], 16)
+    b=int(hex_color[4:], 16)
+    return (r,g,b)
+
 class SnakeException(Exception):
     def __init__(self,message : str) -> None:
         super().__init__(message)
 
 class Gameover(SnakeException):
-    def __init__(self,message : str) -> None:
-        super().__init__(message)
+    def __init__(self) -> None:
+        super().__init__("Gameover")
 
 class SnakeError(SnakeException):
     def __init__(self,message : str) -> None:
@@ -255,11 +264,15 @@ class Snake:
         parser.add_argument("-w", type=int, default=DEFAULT_WIDTH, help="width")
         parser.add_argument("-l", type=int, default=DEFAULT_LENTH, help="length")
         parser.add_argument("-fps", type=int, default=DEFAULT_FPS, help="frame per second")
-        parser.add_argument('-fruit_color', type=str,default='#', help="Fruit's color")
+        parser.add_argument('-fruit_color', type=str,default='#E47C6E', help="Fruit's color")
+        parser.add_argument('-snake_color', type=str,default='#095228', help="Snake's color")
+
         args = parser.parse_args()
 
         if not re.match(r'#[0-9A-Fa-f]{6}$', args.fruit_color):
             raise ColorError(args.fruit_color,"fruit color")
+        if not re.match(r'#[0-9A-Fa-f]{6}$', args.snake_color):
+            raise ColorError(args.snake_color,"snake color")
 
         if args.w < MIN_WIDTH:
             raise ValueError(f"The size (-w argument) must be \u2265 {MIN_WIDTH}.")
@@ -282,6 +295,7 @@ class Snake:
             # Logique principale du jeu
             args = self.boardsize()
             lenth, width = args.l // 20, args.w // 20
+            apple_color, snake_color=hex_to_rgb(args.fruit_color),hex_to_rgb(args.snake_color)
             screen = pygame.display.set_mode((args.w, args.l))
             clock = pygame.time.Clock()
             score = Point(lenth,width)
@@ -294,15 +308,13 @@ class Snake:
             board.attach_obs(score)
 
             dir = Dir.RIGHT
-            colorserpent = (9, 82, 40)
             initialsserpent = [[10, 7], [10, 6], [10, 5]]
-            serp = Serpent(dir, colorserpent, initialsserpent, lenth, width)
+            serp = Serpent(dir, snake_color, initialsserpent, lenth, width)
             board.newobject(serp)  # Ajoute le serpent au plateau
             serp.attach_obs(board)
             board.attach_obs(serp)
 
-            colorapple = (228, 124, 110)
-            pom = Apple(colorapple, serp.position, width, lenth)
+            pom = Apple(apple_color, serp.position, width, lenth)
             board.newobject(pom)  # Ajoute une pomme au plateau
             pom.attach_obs(board)
             board.attach_obs(pom)
