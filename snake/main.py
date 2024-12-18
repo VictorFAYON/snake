@@ -2,9 +2,38 @@ import abc  # Module pour les classes abstraites
 import argparse  # Pour traiter les arguments de ligne de commande
 import enum  # Pour créer des énumérations
 import random as rd  # Pour les opérations aléatoires
+import re #Pour les regular expression
 from typing import List, Tuple, Iterator,  Any  # Types utilisés pour annoter le code
 
 import pygame  # Bibliothèque pour créer des jeux en 2D
+
+def hex_to_rgb(hex_color:str)->tuple:
+    hex_color = hex_color[1:]
+    # Convertir en tuple RGB
+    r=int(hex_color[:2], 16)
+    g=int(hex_color[2:4], 16)
+    b=int(hex_color[4:], 16)
+    return (r,g,b)
+
+class SnakeException(Exception):
+    def __init__(self,message : str) -> None:
+        super().__init__(message)
+
+class Gameover(SnakeException):
+    def __init__(self) -> None:
+        super().__init__("Gameover")
+
+class SnakeError(SnakeException):
+    def __init__(self,message : str) -> None:
+        super().__init__(message)
+
+class IntRangeError(SnakeError):
+    def __init__(self,name:str,value:int,Vmin:int,Vmax:int) -> None:
+        super().__init__(f"Value {value} of {name} is out of allowed range[{Vmin}-{Vmax}]")   
+
+class ColorError(SnakeError):
+    def __init__(self,color:str,name:str) -> None:
+        super().__init__(f"Wrong {name} : {color}]")
 
 class Observer(abc.ABC):
     def __init__(self,l,w) -> None:
@@ -19,12 +48,12 @@ class Observer(abc.ABC):
                 pos=[]
                 for ti in o.tiles:
                     pos.append(ti)
-                    if o == obj:
-                        if pos[0].x > self.l or pos[0].x < 0 or pos[1].y > self.w or pos[1].y < 0 or [pos[0].x,pos[0].y] in [[ti.x,ti.y] for ti in pos[1:]]:
-                            self.notify_limite()
-                    else:
-                        if obj in o:
-                            self.notify_collision(obj,o)
+                if o == obj:
+                    if pos[0].x > self.w or pos[0].x < 0 or pos[0].y > self.l or pos[0].y < 0 or [pos[0].x,pos[0].y] in [[ti.x,ti.y] for ti in pos[1:]]:
+                        self.notify_limite()
+                else:
+                    if obj in o:
+                        self.notify_collision(obj,o)
 
         return obj
 
@@ -43,7 +72,7 @@ class Observer(abc.ABC):
                 for obs in self._observers:
                     obs.notify_object_eaten(obj)
     def notify_limite(self):
-        self.stay=False
+        raise Gameover
 class Subject(abc.ABC):
 
     def __init__(self) -> None:
@@ -89,7 +118,8 @@ class Tile:
         )
 # Classe représentant le plateau du jeu
 class Board(Observer, Subject):
-    def __init__(self, screen: pygame.Surface, size: int) -> None:
+    def __init__(self, screen: pygame.Surface, size: int,l,w) -> None:
+        super().__init__(l,w)
         self._screen: pygame.Surface = screen  # Surface de dessin
         self._size: int = size  # Taille des cases
         self._objects: List[GameObject] = []  # Liste des objets sur le plateau
@@ -112,7 +142,7 @@ class GameObject(abc.ABC):
         if isinstance(obj, GameObject):
             for ti in self.tiles:
                 for autre in obj.tiles:
-                    if [ti.x,ti.y]==autre.tiles:
+                    if [ti.x,ti.y]==[autre.x,autre.y]:
                         return True
             return False
         raise TypeError("Can contain GameObject")
@@ -127,7 +157,7 @@ class GameObject(abc.ABC):
 
 
 # Classe représentant le serpent
-class Serpent(GameObject, Subject, Observer):
+class Serpent(Observer, Subject, GameObject):
     def __init__(
         self,
         dir: Dir,
@@ -136,8 +166,8 @@ class Serpent(GameObject, Subject, Observer):
         l: int,
         w: int,
     ) -> None:
+        super().__init__(l,w)
         self.colorserpent: Tuple[int, int, int] = color  # Couleur du serpent
-        super().__init__()
         self.position: List[Tile] = [
             Tile(self.colorserpent, vertebre[0], vertebre[1]) for vertebre in position
         ]  # Liste des cases constituant le serpent
@@ -158,13 +188,14 @@ class Serpent(GameObject, Subject, Observer):
     def avancer(self) -> None:
         # Fait grandir le serpent
         self.position.append(self.position[-1])
-        for i in range(1, len(self.position)-1):
-            self.position[len(self.position) - i] = self.position[len(self.position) - 1 - i]
-        self.position[0] = self.position[0] + self._direction  # Avance la tête
+        for i in range(1,len(self.position)):
+            self.position[len(self.position) - i] = self.position[len(self.position) - 1 - i] #fait avancer le corps
+        self.position[0] = self.position[0] + self._direction # Avance la tête
         for obs in self.observers:
             obs.notify_object_moved(self)
-        if not self.eaten:
+        if not self.eaten: #fait rétrécir le sermment si non mangé
             self.position.pop()
+        self.eaten=False
 
     @property
     def tiles(self) -> Iterator[Tile]:
@@ -184,20 +215,20 @@ class CheckerBoard(GameObject):
     @property
     def tiles(self) -> Iterator[Tile]:
         # Génère les cases alternées pour le damier
-        for ligne in range(self.l):
-            for colonne in range(self.w):
+        for ligne in range(self.w):
+            for colonne in range(self.l):
                 if (colonne + ligne) % 2 == 0:
                     yield Tile(self._color1, ligne, colonne)
                 else:
                     yield Tile(self._color2, ligne, colonne)
 
 # Classe pour représenter une pomme
-class Apple(GameObject, Subject, Observer):
+class Apple(Observer, Subject, GameObject):
     def __init__(
         self, color: Tuple[int, int, int], serp: List[Tile], w: int, l: int
     ) -> None:
+        super().__init__(l,w)
         self.color: Tuple[int, int, int] = color  # Couleur de la pomme
-        super().__init__()
         self.position: Tile = self.new(serp, w, l)  # Position initiale
 
     def new(self, position: List[Tile], w: int, l: int) -> Tile:
@@ -214,7 +245,8 @@ class Apple(GameObject, Subject, Observer):
 
 # Classe pour gérer le score
 class Point(Observer):
-    def __init__(self) -> None:
+    def __init__(self,l,w) -> None:
+        super().__init__(l,w)
         self.pt: int = 0  # Score initial
 
     def win(self) -> None:
@@ -225,17 +257,29 @@ class Point(Observer):
 class Snake:
     def boardsize(self) -> argparse.Namespace:
         # Configure la taille du plateau via des arguments
-        MIN_WIDTH, MIN_LENTH = 300, 300
+        MIN_WIDTH, MIN_LENTH, FPS_MIN, FPS_MAX= 200, 200, 1, 10
+        DEFAULT_WIDTH,DEFAULT_LENTH,DEFAULT_FPS=300,300,3
 
         parser = argparse.ArgumentParser(description="Set the resolution")
-        parser.add_argument("-w", type=int, default=300, help="width")
-        parser.add_argument("-l", type=int, default=300, help="length")
+        parser.add_argument("-w", type=int, default=DEFAULT_WIDTH, help="width")
+        parser.add_argument("-l", type=int, default=DEFAULT_LENTH, help="length")
+        parser.add_argument("-fps", type=int, default=DEFAULT_FPS, help="frame per second")
+        parser.add_argument('-fruit_color', type=str,default='#E47C6E', help="Fruit's color")
+        parser.add_argument('-snake_color', type=str,default='#095228', help="Snake's color")
+
         args = parser.parse_args()
+
+        if not re.match(r'#[0-9A-Fa-f]{6}$', args.fruit_color):
+            raise ColorError(args.fruit_color,"fruit color")
+        if not re.match(r'#[0-9A-Fa-f]{6}$', args.snake_color):
+            raise ColorError(args.snake_color,"snake color")
 
         if args.w < MIN_WIDTH:
             raise ValueError(f"The size (-w argument) must be \u2265 {MIN_WIDTH}.")
         if args.l < MIN_LENTH:
             raise ValueError(f"The size (-l argument) must be \u2265 {MIN_LENTH}.")
+        if args.fps < FPS_MIN or args.fps > FPS_MAX:
+            raise IntRangeError("FPS", args.fps,FPS_MIN, FPS_MAX)
 
         args.w = (args.w // 20) * 20  # Ajuste à un multiple de 20
         args.l = (args.l // 20) * 20
@@ -246,58 +290,60 @@ class Snake:
         self.stay = False
 
     def game(self) -> None:
-        # Logique principale du jeu
-        args = self.boardsize()
-        lenth, width = args.l // 20, args.w // 20
-        screen = pygame.display.set_mode((args.w, args.l))
-        clock = pygame.time.Clock()
-        score = Point()
-        pygame.display.set_caption(f"SNAKE Score: {score.pt}")
-
-        board = Board(screen, 20)  # Crée le plateau
-        black, white = (0, 0, 0), (255, 255, 255)
-        check = CheckerBoard(width, lenth, black, white)
-        board.newobject(check)  # Ajoute le damier au plateau
-        board.attach_obs(score)
-
-        dir = Dir.RIGHT
-        colorserpent = (9, 82, 40)
-        initialsserpent = [[10, 7], [10, 6], [10, 5]]
-        serp = Serpent(dir, colorserpent, initialsserpent, lenth, width)
-        board.newobject(serp)  # Ajoute le serpent au plateau
-        serp.attach_obs(board)
-        board.attach_obs(serp)
-
-        colorapple = (228, 124, 110)
-        pom = Apple(colorapple, serp.position, width, lenth)
-        board.newobject(pom)  # Ajoute une pomme au plateau
-        pom.attach_obs(board)
-        board.attach_obs(pom)
-
-        while board.stay:
-            board.draw()  # Dessine le plateau
-            clock.tick(2)  # Gère la vitesse du jeu
+        pygame.init()
+        try:
+            # Logique principale du jeu
+            args = self.boardsize()
+            lenth, width = args.l // 20, args.w // 20
+            apple_color, snake_color=hex_to_rgb(args.fruit_color),hex_to_rgb(args.snake_color)
+            screen = pygame.display.set_mode((args.w, args.l))
+            clock = pygame.time.Clock()
+            score = Point(lenth,width)
             pygame.display.set_caption(f"SNAKE Score: {score.pt}")
-            pygame.display.update()
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.endgame()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
-                        self.endgame()
-                    elif event.key == pygame.K_UP:
-                        dir = Dir.UP
-                    elif event.key == pygame.K_DOWN:
-                        dir = Dir.DOWN
-                    elif event.key == pygame.K_LEFT:
-                        dir = Dir.LEFT
-                    elif event.key == pygame.K_RIGHT:
-                        dir = Dir.RIGHT
+            board = Board(screen, 20,lenth,width)  # Crée le plateau
+            black, white = (0, 0, 0), (255, 255, 255)
+            check = CheckerBoard(width, lenth, black, white)
+            board.newobject(check)  # Ajoute le damier au plateau
+            board.attach_obs(score)
 
-            serp.dir = dir
-            serp.avancer()
+            dir = Dir.RIGHT
+            initialsserpent = [[10, 7], [10, 6], [10, 5]]
+            serp = Serpent(dir, snake_color, initialsserpent, lenth, width)
+            board.newobject(serp)  # Ajoute le serpent au plateau
+            serp.attach_obs(board)
+            board.attach_obs(serp)
 
+            pom = Apple(apple_color, serp.position, width, lenth)
+            board.newobject(pom)  # Ajoute une pomme au plateau
+            pom.attach_obs(board)
+            board.attach_obs(pom)
+
+            while board.stay:
+                board.draw()  # Dessine le plateau
+                clock.tick(args.fps)  # Gère la vitesse du jeu
+                pygame.display.set_caption(f"SNAKE Score: {score.pt}")
+                pygame.display.update()
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        board.stay=False
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_q:
+                            board.stay=False
+                        elif event.key == pygame.K_UP:
+                            dir = Dir.UP
+                        elif event.key == pygame.K_DOWN:
+                            dir = Dir.DOWN
+                        elif event.key == pygame.K_LEFT:
+                            dir = Dir.LEFT
+                        elif event.key == pygame.K_RIGHT:
+                            dir = Dir.RIGHT
+
+                serp.dir=dir
+                serp.avancer()
+        except Gameover:
+                print("You loose.")
         pygame.quit()  # Quitte le jeu
 
 # Fonction principale pour démarrer le jeu
