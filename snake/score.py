@@ -1,19 +1,18 @@
 class Score:
 
-    MAX_LENTH=8
+    MAX_LENGTH = 8
 
-    def __init__(self, score: int,name: str)-> None:
-        self.score=score
-        self.name=name[:MAX_LENTH]
+    def __init__(self, score: int, name: str) -> None:
+        self._score = score
+        self._name = name[:self.MAX_LENGTH]
 
     @property
-    def Name(self) ->str:
-        return self.name
-    
+    def name(self) -> str:
+        return self._name
+
     @property
-    def Score(self) -> int:
-        return self.score
-    
-    def __lt__(self, other: object)->bool:
-        return isinstance(object,Score) and self.score < other.score
-    
+    def score(self)-> int:
+        return self._score
+
+    def __lt__(self, other: object) -> bool:
+        return isinstance(object, Score) and self._score < other._score

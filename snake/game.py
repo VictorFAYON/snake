@@ -1,9 +1,10 @@
 # ruff: noqa: D100,S311
 
 # Third party
-import pygame
 import importlib.resources
 import time
+
+import pygame
 
 # First party
 from .board import Board
@@ -13,16 +14,11 @@ from .exceptions import GameOver
 from .fruit import Fruit
 from .snake import Snake
 from .state import State
-from .score import Score
 from .scores import Scores
-
+from .score import Score
 
 # Constants
 SK_START_LENGTH = 3
-
-with importlib.resources.path("mymodule", "myresources/my_resource_file.yml") as myfile:
-        with myfile.open("r") as f:
-            pass
 
 class Game:
     """The main class of the game."""
@@ -33,7 +29,7 @@ class Game:
                  fruit_color: pygame.Color,
                  snake_head_color: pygame.Color,
                  snake_body_color: pygame.Color,
-                 gameover_on_exit: bool,
+                 gameover_on_exit: bool, high_scores:str
                  ) -> None:
         """Object initialization."""
         self._width = width
@@ -44,9 +40,23 @@ class Game:
         self._snake_head_color = snake_head_color
         self._snake_body_color = snake_body_color
         self._gameover_on_exit = gameover_on_exit
-        self._state=State.SCORES
-        self._snake=None
+        self._snake = None
+        self._high_scores_file=high_scores
 
+    def _reset_snake(self) -> None:
+        if self._snake is not None:
+            self._board.detach_obs(self._snake)
+            self._board.remove_object(self._snake)
+        self._snake = Snake.create_random(
+                nb_lines = self._height,
+                nb_cols = self._width,
+                length = SK_START_LENGTH,
+                head_color = self._snake_head_color,
+                body_color = self._snake_body_color,
+                gameover_on_exit = self._gameover_on_exit,
+                )
+        self._board.add_object(self._snake)
+        self._board.attach_obs(self._snake)
 
     def _init(self) -> None:
         """Initialize the game."""
@@ -57,9 +67,6 @@ class Game:
 
         # Create the clock
         self._clock = pygame.time.Clock()
-
-        #create scores
-        self._score = Scores
 
         # Create the main board
         self._board = Board(screen = self._screen,
@@ -75,123 +82,121 @@ class Game:
         # Create snake
         self._reset_snake()
 
-        self._board.add_object(self._snake)
-        self._board.attach_obs(self._snake)
+        #Best Scores
+        self._scores = Scores.default(5)
 
         # Create fruit
         Fruit.color = self._fruit_color
         self._board.create_fruit()
-        # Uploading the fonts
-        with importlib.resources.path("snake", "DejaVuSansMono-Bold.ttf") as myfile:
-            self._font_GAMEOVER=pygame.font.font(myfile,64)
-            self._font_SCORES=pygame.font.font(myfile,32)
 
-    def _reset_snake(self):
-        if self._snake is not None:
-            self._board.remove_object(self._snake)
-        self._snake = Snake.create_random(
-                nb_lines = self._height,
-                nb_cols = self._width,
-                length = SK_START_LENGTH,
-                head_color = self._snake_head_color,
-                body_color = self._snake_body_color,
-                gameover_on_exit = self._gameover_on_exit,
-                )
+        #Upload fonts
+        with importlib.resources.path("snake", "DejaVuSansMono-Bold.ttf") as f:
+            self._fontscore = pygame.font.Font(f, 32)
+            self._fontgameover = pygame.font.Font(f, 64)
+
+    def _drawgameover(self) -> None:
+        text_gameover = self._fontgameover.render("Game Over", True, pygame.Color("red"))  # noqa: E501, FBT003
+        x, y = 80, 160
+        self._screen.blit(text_gameover, (x, y))
+    
+    def _draw_scores(self) -> None:
+        #mettre une ligne high scores
+        x, y = 80, 10
+        for score in self._scores:
+            text_score = self._fontscore.render(score.name.ljust(Score.MAX_LENGTH)+ f"{score.score:.>8}", True, pygame.Color("red"))
+            self._screen.blit(text_score, (x, y))
+            y += 32
+
+
+    def _process_scores_event(self, event) -> None:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            self._state = State.PLAY
+
+    def _process_play_event(self, event) -> None:
+        # Key press
+        if event.type == pygame.KEYDOWN:
+            # Quit
+            match event.key:
+                case pygame.K_UP:
+                    self._snake.dir = Dir.UP
+                case pygame.K_DOWN:
+                    self._snake.dir = Dir.DOWN
+                case pygame.K_LEFT:
+                    self._snake.dir = Dir.LEFT
+                case pygame.K_RIGHT:
+                    self._snake.dir = Dir.RIGHT
 
     def _process_events(self) -> None:
         """Process pygame events."""
         # Loop on all events
         for event in pygame.event.get():
+
             match self._state:
                 case State.SCORES:
-                    match event.key:
-                        case pygame.K_SPACE:
-                            self._state=State.PLAY
+                    self._process_scores_event(event)
                 case State.PLAY:
-                    if event.type == pygame.KEYDOWN:
-                        match event.key:
-                            case pygame.K_q:
-                                self.state = State.QUIT
-                            case pygame.K_UP:
-                                self._snake.dir = Dir.UP
-                            case pygame.K_DOWN:
-                                self._snake.dir = Dir.DOWN
-                            case pygame.K_LEFT:
-                                self._snake.dir = Dir.LEFT
-                            case pygame.K_RIGHT:
-                                self._snake.dir = Dir.RIGHT
+                    self._process_play_event(event)
+
+
             # Closing window (Mouse click on cross icon or OS keyboard shortcut)
             if event.type == pygame.QUIT:
-                self._run = False
+                self._state = State.QUIT
 
-    def _drawgameover(self) -> None:
-        text_surface = self._font_GAMEOVER.render("GAMEOVER",True , pygame.Color("red"))
-        x, y = 80, 160 # Define the position where to write text.
-        self._screen.blit(text_surface, (x, y))
+            if event.type == pygame.KEYDOWN:
+                match event.key:
+                    case pygame.K_q:
+                        self._state = State.QUIT
+            
     
-    def process_score(self):
-        pass
-
-    def _draw_scores(self):
-        x, y = 80, 10 # Define the position where to write text.
-        for score in self._scores:
-            text_scores= self._font_GAMEOVER.render(f"{score.name}" +f"{score.score:.>8}",True , pygame.Color("red"))
-            self._screen.blit(text_surface, (x, y))
-            y+=32
-
-    def _displayscores(self) -> None:
-        text_surface = self._font_SCORES.render("GAMEOVER",True , pygame.Color("red"))
-        x, y = 80, 160 # Define the position where to write text.
-        self._screen.blit(text_surface, (x, y))
-
     def start(self) -> None:
         """Start the game."""
         # Initialize pygame
         pygame.init()
+
         # Initialize game
         self._init()
 
-        while self._state!=State.QUIT:
+        # Start pygame loop
+        self._state = State.SCORES
+        while self._state != State.QUIT:
+
             # Wait 1/FPS second
             self._clock.tick(self._fps)
 
             # Listen for events
             self._process_events()
-            # Draw
-            self._board.draw()
+
+            # Update objects
             try:
-                # Wait 1/FPS second
-                self._clock.tick(self._fps)
+                if self._state == State.PLAY:
+                    self._snake.move()
+            except GameOver:
+                self._state = State.GAME_OVER
+                cpt = self._fps
 
-                # Listen for events
-                self._process_events()
-                # Draw
-                self._board.draw()
 
-                # Display
-                pygame.display.update()
-
-                self._snake.move()
-
-            except GameOver:  # noqa: PERF203
-                self._state=State.GAMEOVER
-                countdown=self._fps
 
             # Draw
             self._board.draw()
             match self._state:
-                case State.GAMEOVER:
+                case State.GAME_OVER:
                     self._drawgameover()
-                    countdown-=1
-                    if countdown==0:
-                        score=self._snake.score
+                    cpt -= 1
+                    if cpt == 0:
+                        score = self._snake.score
+                        self._reset_snake()
                         if self._scores.is_high_score(score):
-                            self._state=State.INPUT_NAME #aller chercher event.unicode pour écrire le nom
+                            self._state = State.INPUT_NAME
                         else:
-                            self._state=State.SCORES
-                            self._reset_snake()
+                            self._state = State.SCORES
                 case State.SCORES:
-                    self._displayscores()
-            # Terminate pygame
+                    self._draw_scores()
+
+            # Display
+            pygame.display.update()
+
+
+
+        # Terminate pygame
         pygame.quit()
 

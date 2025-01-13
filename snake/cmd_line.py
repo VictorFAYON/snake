@@ -6,6 +6,7 @@ import re
 
 # Third party
 import pygame
+import yaml
 
 # First party
 from .exceptions import ColorError, IntRangeError
@@ -23,6 +24,7 @@ MIN_TILE_SIZE = 10
 MAX_TILE_SIZE = 30
 MIN_FPS = 10
 MAX_FPS = 30
+SCORE_FILE="snake_scores.yml"
 
 # Snake constants
 SK_DEF_HEAD_COLOR = pygame.Color("Green2") # Snake's head default color
@@ -67,6 +69,7 @@ def read_args() -> argparse.Namespace:
     # Game options
     parser.add_argument("--gameover-on-exit", action = "store_true",
                         help="Exiting the board ends the game.")
+    parser.add_argument("--high-scores-file", default=SCORE_FILE, help="Name of the high scores file")
 
     # FPS
     parser.add_argument("--fps", type = int, default = DEFAULT_FPS,
