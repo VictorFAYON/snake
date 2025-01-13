@@ -45,6 +45,7 @@ class Game:
         self._snake_body_color = snake_body_color
         self._gameover_on_exit = gameover_on_exit
         self._state=State.SCORES
+        self._snake=None
 
 
     def _init(self) -> None:
@@ -56,6 +57,9 @@ class Game:
 
         # Create the clock
         self._clock = pygame.time.Clock()
+
+        #create scores
+        self._score = Scores
 
         # Create the main board
         self._board = Board(screen = self._screen,
@@ -128,6 +132,13 @@ class Game:
     def process_score(self):
         pass
 
+    def _draw_scores(self):
+        x, y = 80, 10 # Define the position where to write text.
+        for score in self._scores:
+            text_scores= self._font_GAMEOVER.render(f"{score.name}" +f"{score.score:.>8}",True , pygame.Color("red"))
+            self._screen.blit(text_surface, (x, y))
+            y+=32
+
     def _displayscores(self) -> None:
         text_surface = self._font_SCORES.render("GAMEOVER",True , pygame.Color("red"))
         x, y = 80, 160 # Define the position where to write text.
@@ -160,10 +171,7 @@ class Game:
                 # Display
                 pygame.display.update()
 
-                while self._state==State.PLAY:
-
-                    # Update objects
-                    self._snake.move()
+                self._snake.move()
 
             except GameOver:  # noqa: PERF203
                 self._state=State.GAMEOVER
@@ -176,7 +184,12 @@ class Game:
                     self._drawgameover()
                     countdown-=1
                     if countdown==0:
-                        self._state=State.SCORES
+                        score=self._snake.score
+                        if self._scores.is_high_score(score):
+                            self._state=State.INPUT_NAME #aller chercher event.unicode pour écrire le nom
+                        else:
+                            self._state=State.SCORES
+                            self._reset_snake()
                 case State.SCORES:
                     self._displayscores()
             # Terminate pygame
