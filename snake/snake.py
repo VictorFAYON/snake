@@ -17,6 +17,7 @@ from .tile import Tile
 # Constants
 DEF_HEAD_COLOR = pygame.Color("green")
 DEF_BODY_COLOR = pygame.Color("darkgreen")
+SK_START_LENGTH = 3
 
 class Snake(GameObject):
     """The snake."""
@@ -39,6 +40,11 @@ class Snake(GameObject):
     def tiles(self) -> typing.Iterator[Tile]:
         """Iterator on the tiles."""
         return iter(self._tiles)
+
+    @property
+    def score(self) -> int :
+        """Score of the player."""
+        return self._length-SK_START_LENGTH
 
     @property
     def dir(self) -> Dir:
