@@ -1,1 +1,1 @@
-from .snake.main import Tile
+# ruff: noqa
