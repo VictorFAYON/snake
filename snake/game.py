@@ -206,6 +206,7 @@ class Game:
 
 
 
+
             # Draw
             self._board.draw()
             match self._state :
@@ -219,12 +220,13 @@ class Game:
                             self._new_high_score=Score(score, "")
                             self._scores.add_score(self._new_high_score)
                             self._state= State.INPUT_NAME
-                            print([{"name":s.name,"score":s.score} for s in self._scores])
-                            self._scores.saving_hs(self._scores_file)
                         else :
                             self._state=State.SCORES
                 case State.SCORES | State.INPUT_NAME:
                     self._draw_scores()
+                    self._scores.saving_hs(self._scores_file)
+
+
 
             # Display
             pygame.display.update()
