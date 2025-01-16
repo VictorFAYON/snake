@@ -4,9 +4,11 @@
 import importlib.resources
 import sys
 
+# First party
+from pathlib import Path
+
 import pygame
 
-# First party
 from .board import Board
 from .checkerboard import Checkerboard
 from .dir import Dir
@@ -33,6 +35,7 @@ class Game:
                  snake_head_color: pygame.Color,
                  snake_body_color: pygame.Color,
                  gameover_on_exit: bool,
+                 scores_file:str,
                  ) -> None:
         """Object initialization."""
         self._width = width
@@ -45,6 +48,7 @@ class Game:
         self._gameover_on_exit = gameover_on_exit
         self._snake=None
         self._new_high_score=None | Score
+        self._scores_file=Path(scores_file)
 
     def _reset_snake(self) -> None:
         """Reset the snake."""
@@ -88,6 +92,8 @@ class Game:
 
         #Scores
         self._scores = Scores.default(MAX_SCORES)
+        if self._scores_file.exists():
+            self._scores.loading_hs(self._scores_file)
 
         # Create fruit
         Fruit.color = self._fruit_color
@@ -200,6 +206,7 @@ class Game:
 
 
 
+
             # Draw
             self._board.draw()
             match self._state :
@@ -208,17 +215,18 @@ class Game:
                     countdown-=1
                     if countdown==0 :
                         score=self._snake.score
-                        print(score)
                         self._reset_snake()
                         if self._scores.is_highscore(score) is True :
                             self._new_high_score=Score(score, "")
-                            print(self._new_high_score.name,self._new_high_score.score)
                             self._scores.add_score(self._new_high_score)
                             self._state= State.INPUT_NAME
                         else :
                             self._state=State.SCORES
                 case State.SCORES | State.INPUT_NAME:
                     self._draw_scores()
+                    self._scores.saving_hs(self._scores_file)
+
+
 
             # Display
             pygame.display.update()

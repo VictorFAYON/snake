@@ -1,7 +1,15 @@
 import typing
+import yaml
+import schema
+
 
 from .score import Score
+from pathlib import Path
 
+SCORE_FILE_SCHEMA = schema.Schema([
+    {"name":str,
+     "score":int}
+])
 
 class Scores :
     """Contains instances of scores."""
@@ -32,6 +40,24 @@ class Scores :
                 self._scores.pop()
             self._scores.append(score_player)
             self._scores.sort(reverse=True)
+
+    def saving_hs(self,hs_file:Path)->None:
+        """Saves high score in the file."""
+        high_scores=[{"name":s.name,"score":s.score} for s in self]
+        with hs_file.open("w") as fd:
+            yaml.safe_dump(high_scores,fd)
+
+    def loading_hs(self,scores_file:Path) -> None:
+        """Loads high scores from the file."""
+        with open(scores_file, "r") as f:
+            hs = yaml.load(f, Loader=yaml.Loader)
+        SCORE_FILE_SCHEMA.validate(hs)
+        self._scores=[]
+        for sc in hs:
+            self._scores.append(Score(sc["score"],sc["name"]))
+        self._scores=sorted(self._scores, reverse = True)[:self._max_scores]
+
+
 
 
 

@@ -22,6 +22,7 @@ def main() -> None: # noqa: D103
              snake_head_color = args.snake_head_color,
              snake_body_color = args.snake_body_color,
              gameover_on_exit = args.gameover_on_exit,
+             scores_file=args.scores_file,
              ).start()
 
     except SnakeError as e:
