@@ -1,7 +1,5 @@
-import sys
 import logging
 import colorlog
-
 
 def logger_settings() -> None:
     logger = logging.getLogger("snake")
@@ -14,4 +12,6 @@ def logger_settings() -> None:
             "ERROR": "red",
             "CRITICAL": "red",
             })
-    logger.setLevel(logging.DEBUG)
+    color_handler = colorlog.StreamHandler()
+    color_handler.setFormatter(color_fmt)
+    logger.addHandler(color_handler)
