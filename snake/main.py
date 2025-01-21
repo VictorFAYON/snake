@@ -3,7 +3,6 @@
 # Standard
 import sys
 import logging
-import colorlog
 
 # First party
 from .cmd_line import read_args
@@ -11,13 +10,19 @@ from .exceptions import SnakeError
 from .game import Game
 from .logger_setting import logger_settings
 
-logger_settings()
-
 def main() -> None: # noqa: D103
 
     try:
         # Read command line arguments
         args = read_args()
+
+        logger_settings()
+
+        logger = logging.getLogger("snake")
+        if args.verbose == 1:
+            logger.setLevel(logging.INFO)
+        elif args.verbose == 2:
+            logger.setLevel(logging.DEBUG)
 
         # Start game
         Game(width = args.width, height = args.height,

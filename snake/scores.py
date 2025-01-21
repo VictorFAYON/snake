@@ -1,3 +1,4 @@
+import logging
 import typing
 import yaml
 import schema
@@ -5,6 +6,8 @@ import schema
 
 from .score import Score
 from pathlib import Path
+
+logger = logging.getLogger("snake")
 
 SCORE_FILE_SCHEMA = schema.Schema([
     {"name":str,
@@ -22,6 +25,7 @@ class Scores :
     @classmethod
     def default(cls, max_scores : int ) -> "Scores" :
         """Classmethod."""
+        logger.info("Default high scores loaded.")
         return cls(max_scores, [Score (score=-1, name="Joe"), Score(score=8, name="Jack"), Score(score=0,name="Averell"), Score(score=6, name="William")])
 
     def __iter__(self) -> typing.Iterator[Score]:
@@ -38,6 +42,7 @@ class Scores :
         if self.is_highscore(score_player.score):
             if len(self._scores)>=self._max_scores :
                 self._scores.pop()
+                logger.info("New highest score found.")
             self._scores.append(score_player)
             self._scores.sort(reverse=True)
 
@@ -56,6 +61,7 @@ class Scores :
         for sc in hs:
             self._scores.append(Score(sc["score"],sc["name"]))
         self._scores=sorted(self._scores, reverse = True)[:self._max_scores]
+        logger.info("High scores displayed.")
 
 
 

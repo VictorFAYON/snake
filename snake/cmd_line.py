@@ -73,9 +73,15 @@ def read_args() -> argparse.Namespace:
     parser.add_argument("--fps", type = int, default = DEFAULT_FPS,
                         help="Set the number of frames per second."
                         f" Must be between {MIN_FPS} and {MAX_FPS}.")
-    #Scores
+    # Scores
     parser.add_argument("--scores-file", type=str,default=DEFAULT_SCORES_FILE,
                         help="The path of the high scores file")
+
+    # Verbose
+    parser.add_argument("--verbose", "-v", dest="verbose", action="count",
+        default=0,
+        help="Verbose level. -v for information, -vv for debug,"
+                  " -vvv for trace.")
 
     # Parse
     args = parser.parse_args()
