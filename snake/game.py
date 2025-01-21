@@ -2,8 +2,7 @@
 
 # Third party
 import importlib.resources
-import sys
-
+import logging
 # First party
 from pathlib import Path
 
@@ -24,6 +23,9 @@ from .state import State
 SK_START_LENGTH = 3
 MAX_LENGHT=8
 MAX_SCORES=5
+
+logger = logging.getLogger("snake")
+
 
 class Game:
     """The main class of the game."""
@@ -184,7 +186,7 @@ class Game:
 
         # Initialize game
         self._init()
-
+        logger.info("Init")
         # Start pygame loop
         self._state = State.SCORES
         while self._state != State.QUIT:
@@ -202,6 +204,7 @@ class Game:
 
             except GameOver:
                 self._state=State.GAMEOVER
+                logger.info("state=GAMEOVER")
                 countdown=self._fps
 
 
@@ -232,7 +235,7 @@ class Game:
             pygame.display.update()
 
 
-
+        logger.info("Quit")
         # Terminate pygame
         pygame.quit()
 

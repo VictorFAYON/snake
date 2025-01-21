@@ -24,6 +24,8 @@ MAX_TILE_SIZE = 30
 MIN_FPS = 10
 MAX_FPS = 30
 DEFAULT_SCORES_FILE="snake_scores.yml"
+DEFAULT_LOGGER_LEVEL="info"
+
 
 # Snake constants
 SK_DEF_HEAD_COLOR = pygame.Color("Green2") # Snake's head default color
@@ -76,7 +78,9 @@ def read_args() -> argparse.Namespace:
     #Scores
     parser.add_argument("--scores-file", type=str,default=DEFAULT_SCORES_FILE,
                         help="The path of the high scores file")
-
+    #logging
+    parser.add_argument("--logger-set-level", type=str,default=DEFAULT_LOGGER_LEVEL,
+                        help="the level of the logger")
     # Parse
     args = parser.parse_args()
 

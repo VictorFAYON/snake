@@ -1,4 +1,8 @@
 # ruff: noqa: D100,S311
+import logging
+
+logger = logging.getLogger("snake")
+
 
 class SnakeException(Exception): # noqa: N818
     """Exception super-class for all Snake exceptions."""
@@ -28,6 +32,8 @@ class IntRangeError(SnakeError):
         """Object initialization."""
         super().__init__(f"{label} value must be between {low} and {high}."
                          f" {value} is not allowed.")
+        logger.error("IntRangeError")
+
 
 class ColorError(SnakeError):
     """Exception for color format error."""
@@ -36,4 +42,6 @@ class ColorError(SnakeError):
         """Object initialization."""
         super().__init__(f'Color "{color}" does not respect the HTML'
                          ' hexadecimal format #rrggbb.')
+        logger.error("ColorError")
+
 
