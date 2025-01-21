@@ -3,6 +3,32 @@
 # Third party
 import importlib.resources
 import sys
+import colorlog 
+import logging
+
+
+# Définir le format de couleur (ou utiliser un format classique si la couleur n'est pas nécessaire)
+  # Modifie ce format selon tes besoins
+
+# Configurer le gestionnaire de logs avec un formatteur de couleur (si tu utilises de la couleur)
+color_handler = logging.StreamHandler()
+
+
+logger = logging.getLogger()
+logger.addHandler(color_handler)
+
+from .logger_setting import logger_settings
+
+logger_settings()
+
+logger = logging.getLogger("snake")
+
+
+
+color_handler = colorlog.StreamHandler()
+
+logger.addHandler(color_handler)
+
 
 # First party
 from pathlib import Path
@@ -138,11 +164,16 @@ class Game:
                     self._snake.dir = Dir.LEFT
                 case pygame.K_RIGHT:
                     self._snake.dir = Dir.RIGHT
+                case _:
+                    logger.info("Please use the arrow keys to move the snake")
+    
+    
 
     def _process_inputname(self, event: pygame.event.Event) -> None :
         """The player put his/her name in the ranking list of highscores."""
         if self._new_high_score is not None and event.type == pygame.KEYDOWN :
-            if event.key == pygame.K_RETURN:  # Validate the name
+            if event.key == pygame.K_RETURN:
+                logger.info("Please enter your name")  # Validate the name
                 self._state = State.SCORES
             elif event.key == pygame.K_BACKSPACE:  # Correct a mistake
                 self._new_high_score.name=self._new_high_score.name[:-1]
@@ -166,6 +197,8 @@ class Game:
             # Closing window (Mouse click on cross icon or OS keyboard shortcut)
             if event.type == pygame.QUIT:
                 self._state = State.QUIT
+            
+
 
             # Key press
             if event.type == pygame.KEYDOWN and event.key==pygame.K_SPACE:
