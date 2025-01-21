@@ -2,12 +2,16 @@
 
 # Standard
 import sys
+import logging
+import colorlog
 
 # First party
 from .cmd_line import read_args
 from .exceptions import SnakeError
 from .game import Game
+from .logger_setting import logger_settings
 
+logger_settings()
 
 def main() -> None: # noqa: D103
 
